@@ -1,14 +1,11 @@
 ---
 sidebar: auto
-sidebarDepth: 2
 date: "2021-7-4"
 tag: polyfill 
 category: 
  - frontEnd
 title: 手撕api-promise
 ---
-
-# 手撕api-promise
 
 ## 核心代码
 

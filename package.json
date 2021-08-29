@@ -9,13 +9,14 @@
     "publish-web": "bash .\\deploy.sh",
     "publish-theme": "bash .\\theme-deploy.sh"
   },
-  "author": "",
+  "author": "zhaopan",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "vuepress": "1.8.2"
+  },
   "devDependencies": {
     "@vuepress/plugin-medium-zoom": "^1.0.0-rc.1",
     "@vuepress/plugin-pwa": "^1.8.2",
-    "vuepress": "1.2.0",
     "vuepress-theme-zp": "0.0.31"
   }
 }
