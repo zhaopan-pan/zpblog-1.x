@@ -8,5 +8,6 @@
 /deploy.sh
 /theme-deploy.sh
 /theme-publish.sh
+/web-deploy.sh
 
 
