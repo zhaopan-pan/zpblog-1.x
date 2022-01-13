@@ -5,7 +5,7 @@ tag: webpack
 category: 
  - frontEnd  
  - 源码
-title: webpack-热更新源码分析
+title: 源码 | webpack热更新原理分析
 ---
 
 > 脚手架基础依赖：Webpack + koa + Webpack-Dev-Middleware + Webpack-Hot-Middleware
@@ -383,6 +383,6 @@ function performReload() {
 }
 ```
 
-
 ## 
+
 > [脚手架源码->https://github.com/zhaopan-pan/webpack5-react17](https://github.com/zhaopan-pan/webpack5-react17)
