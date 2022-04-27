@@ -20,15 +20,15 @@ title: 源码 | webpack热更新原理分析
 
 先从 `npm start` 开始吧，项目启动之后，控制台会输出整个构建过程，可以看到生成的 hash 值 `d72c35a6f41652bd0d20`
 
-![start](./img/start.png "图片地址")
+![start](./img/HU-start.png "图片地址")
 
 这时当我们修改了页面内容后点击 `command/ctrl+s` ，首先控制台会出现 `compiling...` 的字样，然后从控制台可以发现，生成了新的 hash 值 `e15fd7f3888354998059` ，而且上次输出的 Hash `d72c35a6f41652bd0d20` 值被作为本次编译新生成的 hmr 文件标识, 同理这次生成的 hash 值 `e15fd7f3888354998059` 将会成为下次更新后的 Hmr 文件标识
 
-![contentChangeUpdate](./img/contentChangeUpdate.png "图片地址")
+![HU-contentChangeUpdate](./img/HU-contentChangeUpdate.png "图片地址")
 
 但是如果只是点击 `command/ctrl+s` ，而不做内容修改，hash 值是不会改变的 `e15fd7f3888354998059`
 
-![nochange](./img/nochange.png "图片地址")
+![nochange](./img/HU-nochange.png "图片地址")
 
 ### Watch
 
@@ -69,7 +69,7 @@ outputFileSystem = (0, _memfs.createFsFromVolume)(new _memfs.Volume());
 
 接下来我们把目光转向浏览器，打开 network，会发现有个\_\_webpack_hmr 的请求，然后点开 `EventStream` ，第一行的 data 是我们第一次启动项目编译成功后的信息, 可以看到有名称，编译时间，action 类型，编译产生的 hash 值，如果有问题还会有若干警告和错误信息.
 
-![heartbeat](./img/heartbeat.png "图片地址")
+![heartbeat](./img/HU-heartbeat.png "图片地址")
 
 这时我们修改项目内容并保存编译后，会发现有新的请求和最新编译收到的 💓，里面 `a9fc7182b0751c5f0330` 就是最新编译产生的 hash 值
 
@@ -77,20 +77,20 @@ outputFileSystem = (0, _memfs.createFsFromVolume)(new _memfs.Volume());
 * bundle.dd99868591ac0fcedd6a.hot-update.js
 * runtime.dd99868591ac0fcedd6a.hot-update.js
 
-![update-hash](./img/update-hash.png "图片地址")
+![update-hash](./img/HU-update-hash.png "图片地址")
 
 这些请求名中间的 hash 值都是上一次更新生成的 hash 值，验证了我们上面的说法，点开 `runtime.dd99868591ac0fcedd6a.hot-update.json` ，
 c 里面包括要更新的文件
 
-![update-hash](./img/runtime-hot-update-json.png "图片地址")
+![update-hash](./img/HU-runtime-hot-update-json.png "图片地址")
 
 打开 `bundle.dd99868591ac0fcedd6a.hot-update.js` , 返回的内容就是我们此次更改代码编译后的最新结果
 
-![update-hash](./img/bundle-hot-update.png "图片地址")
+![update-hash](./img/HU-bundle-hot-update.png "图片地址")
 
 在看 `runtime.dd99868591ac0fcedd6a.hot-update.js` 这个是引导程序的内容, 包含了这次更新产生的 hash 值，下次更新需要的用到
 
-![update-hash](./img/runtime-hot-update-js.png "图片地址")
+![update-hash](./img/HU-runtime-hot-update-js.png "图片地址")
 
 #### Webpack-Hot-Middleware
 
@@ -188,7 +188,7 @@ if (__resourceQuery) {
 
 所以说这些个参数都是可配置的，通过路径传参即可，不过改 path 的话需要在加载 `webpack-hot-middleware` 中间件时同步修改服务端的 path，才会生效，要不然会报 404
 
-![clientConfig](./img/clientConfig.png "图片地址")
+![HU-clientConfig](./img/HU-clientConfig.png "图片地址")
 
 初始化参数后就开始准备连接了，但是建立连接前要先校验不是？
 
