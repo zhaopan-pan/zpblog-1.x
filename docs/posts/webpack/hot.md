@@ -38,12 +38,25 @@ title: 给公司项目加上热更新功能
 
 ![start](./img/fixHotUpdate-socket-conect-test.jpg "图片地址")
 
-不出所料，果然是端口问题, 那就看一下这个socket地址是怎么生成的
+不出所料，果然是端口问题, 那就找下车祸现场吧
 
-#### socket地址生成规则
+#### 车祸现场
 
-这个要先梳理下wds的启动过程，要不然会很乱
-首先要有两个概念，一个是服务端，一个是客户端，服务端就是项目webpack自带的 `wds` (有些项目自研脚手架里面自己搭建node服务，用到 `webpack-dev-middleware` ，其实 `wds` 也是依赖 `wdm` )，就是我们的开发者服务，watch文件变化、和客户端通信、代理请求、自动打开浏览器等等功能后依赖他完成，客户端是我们的浏览器端，项目启动， `webpack` 在编译完成后，会启动 `wds` 服务
+因为项目脚手架是自定义的，就从参数配置的部分忘里面看，在看到调用webpack和wds的时候，发现有些不对劲了，在开启wds监听事件的时候端口加了+1, 因为项目还有启了个koa服务用的是3000端口，区分端口以防占用，这里可以理解，不过在这个地方临时+1的话，和其他webpack的配置就不统一的，看到这问题已经浮现了
+
+![start](./img/fixHotUpdate-wpConfig.png "图片地址")
+
+找到公共配置webpack的地方+1应该就行了，不过现在又有个问题了，socket地址的地址是怎么生成的呢？那就继续挖一挖吧
+
+![start](./img/fixHotUpdate-wpCommonConfig.png "图片地址")
+
+#### socket地址是如何生成的呢？
+
+从配置开始看，有个很重要的点，在webpack的配置参数里面 `entry` , 对于启用热更新是很重要的，[官方文档的指南](https://webpack.docschina.org/guides/hot-module-replacement/#enabling-hmr)里面就有，其实前面说的端口错误也就是影响到这里的配置了，正常情况应该是 `webpack-dev-server/client?http://localhost:3001` ， 我们会在输出文件里面可以看到它的踪影，后面再说
+
+![start](./img/fixHotUpdate-entry.png "图片地址")
+
+这里要有两个概念，一个是服务端，一个是客户端，服务端就是项目webpack自带的 `wds` (有些项目自研脚手架里面自己搭建node服务，用到 `webpack-dev-middleware` ，其实 `wds` 也是依赖 `wdm` )，就是我们的开发者服务，watch文件变化、和客户端通信、代理请求、自动打开浏览器等等功能后依赖他完成，客户端是我们的浏览器端，项目启动， `webpack` 在编译完成后，会启动 `wds` 服务，看源码吧
 
 > webpack-dev-server/lib/Server.js line:72
 
@@ -91,7 +104,37 @@ function updateCompiler(compiler, options) {
 
 wds拉起浏览器，让浏览器请求 `http://localhost:3001/`
 
-可以看到html里面有三个bundle， `runtime.bundle.js` 是webpack的引导程序，管理着各个chunk，而 `vender.chunk.js` 是项目打包后node_modules代码, 这两个是splitChunks配置生成的， `entry.bundle.js` 主要是项目代码， 除了项目代码还有新发现，在文件底部webpack会引入
-`webpack-dev-server/client/index.js?http://localhost:3000"` , 
+可以看到html里面会加载三个bundle，前两个是根据splitChunks配置生成的， `entry.bundle.js` 是根据 `entry` 配置生成的
 
-![start](./img/fixHotUpdate-entry.jpg "图片地址")
+* `runtime.bundle.js` 是webpack的引导程序，管理着各个chunk，
+* `vender.chunk.js` 是项目打包后node_modules代码
+* `entry.bundle.js` 主要是项目代码， 
+
+![fixHotUpdate-entry-bundle-js](./img/fixHotUpdate-entry-bundle-js.png "图片地址")
+
+  
+`entry.bundle.js` 中除了项目代码还有新发现，webpack在通过 `__webpack_require__` 来引入 `client.js` , 而 `webpack-dev-server/client/index.js?http://localhost:3001"` , 这个路径就是上面配置的entry啊，这就解释了webpack是如何把 `client.js` 导入到浏览器端的，有了 `client.js` ，浏览器才算是真正的客户端，才可以通过websocket和webpack进行交互，下面看看 `client.js`
+
+#### client.js
+
+`createSocketUrl` , 终于看到url的庐山真面目了，这个方法是用来生成websocket的url的，这里有个新名词[__resourceQuery](https://webpack.docschina.org/api/module-variables/#__resourcequery-webpack-specific)，他是webpack的一个全局变量，当引入当前文件时，`__resourceQuery=?http://localhost:3001`，所以端口错误的就是影响到这里正确生成url了
+
+? 后面的参数也只是给 `webpack-dev-server/client/index.js` 传的参数而已，
+
+> webpack-dev-server/client/index.js
+
+```js
+...
+var socket = require('./socket');
+
+// line:20
+var createSocketUrl = require('./utils/createSocketUrl');
+...
+// line:35
+var socketUrl = createSocketUrl(__resourceQuery);
+
+...
+
+// line:176
+socket(socketUrl, onSocketMessage);
+```
