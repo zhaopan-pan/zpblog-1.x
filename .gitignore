@@ -1,4 +1,5 @@
 #build
+.DS_Store
 /docs/.vuepress/dist/
 /docs/.vuepress/config.js
 /docs/.vuepress/theme/

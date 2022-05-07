@@ -6,9 +6,9 @@
 	"scripts": {
 		"start": "vuepress dev docs",
 		"build": "vuepress build docs",
-		"web-deploy": "bash .\\web-deploy.sh",
-		"theme-deploy": "bash .\\theme-deploy.sh",
-		"theme-publish": "bash .\\theme-publish.sh"
+		"web-deploy": "bash ./web-deploy.sh",
+		"theme-deploy": "bash ./theme-deploy.sh",
+		"theme-publish": "bash ./theme-publish.sh"
 	},
 	"author": "zhaopan",
 	"license": "ISC",
