@@ -12,9 +12,9 @@ title: 和webpack-dev-server建立webSocket连接发生了什么？
 
 ## 背景
 
-[上一篇][pre]主要是为了解决热更新的问题，通过解决问题，有引申出了另一个问题，就是webpack-dev-server是如何建立webSocket连接呢？
+[上一篇][pre]主要是为了解决热更新的问题，通过解决问题，又引申出了另一个问题，就是webpack-dev-server是如何建立webSocket连接呢？
 
-## 创建服务端以及和dev服务的关系
+## 创建webSocket服务端以及和dev服务的关系
 
 webSocket的连接也是需要一个服务端，这个在wds创建dev服务成功之后创建的，这里为啥要放在开发服务创建完成后呢？因为后面要通过dev服务来
 
@@ -66,11 +66,11 @@ module.exports = class WebsocketServer extends BaseServer {
 }
 ```
 
-这里面有个小插曲，通过 `options.transportMode.server='sockjs'` 配置，wds会用[sockjs](https://www.npmjs.com/package/sockjs)来创建socket服务的，当然了，相对应的浏览器端也会用[sockjs-client](https://www.npmjs.com/package/sockjs-client)来做连接，好处是可以对于不支持webSocket协议的浏览器可以降级为轮询处理，如果要解决浏览器兼容问题，可以用这个
+这里面有个小插曲，除了上面提到的[ws](ws-npm)，通过 `options.transportMode.server='sockjs'` 配置，wds会用[sockjs](https://www.npmjs.com/package/sockjs)来创建socket服务的，当然了，相对应的浏览器端也会用[sockjs-client](https://www.npmjs.com/package/sockjs-client)来做连接，好处是可以对于不支持webSocket协议的浏览器可以降级为轮询处理，如果要解决浏览器兼容问题，可以用这个
 
 ## socket地址是如何生成的呢？
 
-从配置开始看，有个很重要的点，在webpack的配置参数里面 `entry` , 对于启用热更新是很重要的，[官方文档的指南](https://webpack.docschina.org/guides/hot-module-replacement/#enabling-hmr)里面就有，其实[上一篇][pre]的端口错误也就是影响到这里的配置了，正常情况应该是 `webpack-dev-server/client?http://localhost:3001` ， 我们会在输出文件里面可以看到它的踪影，后面再说
+从配置开始看，有个很重要的点，在webpack的配置参数里面 `entry` , 对于启用热更新是很重要的，[官方文档的指南](https://webpack.docschina.org/guides/hot-module-replacement/#enabling-hmr)里面就有，其实[上一篇][pre]的端口错误也就是影响到这里的配置了，正常情况应该是 `webpack-dev-server/client?http://localhost:3001` ， 我们会在输出文件里面可以看到它的踪影，后面会说到
 
 ![start](./img/fixHotUpdate-entry.png "图片地址")
 
@@ -158,7 +158,11 @@ wds拉起浏览器，让浏览器请求 `http://localhost:3001/`
 
 ## 客户端如何建立连接
 
-`createSocketUrl` , 终于看到url的庐山真面目了，这个方法就是用来生成websocket的url的，这里有个新名词[__resourceQuery](https://webpack.docschina.org/api/module-variables/#__resourcequery-webpack-specific)，他是webpack的一个全局变量，当引入当前文件时， `__resourceQuery=?http://localhost:3001` ，所以[上一篇][pre]端口错误的就是影响到这里正确生成url了, ? 后面的参数也只是给 `webpack-dev-server/client/index.js` 传参而已，至于 `createSocketUrl` 方法也只是校验协议、端口、地址等信息，最后返回一个合法的url。
+`createSocketUrl` , 终于看到url的庐山真面目了，这个方法就是用来生成websocket的url的。
+
+简单介绍下这个新名词[__resourceQuery](https://webpack.docschina.org/api/module-variables/#__resourcequery-webpack-specific)，他是webpack的一个变量，比如当引入一个文件时， `file.js?test` , `file.js` 是文件名，此时在 `file.js` 中就可以取到 `__resourceQuery` 而 `__resourceQuery=?test` ， 所以 `?` 后面的参数就是给文件传入得信息。
+
+同理[上面](#socket%E5%9C%B0%E5%9D%80%E6%98%AF%E5%A6%82%E4%BD%95%E7%94%9F%E6%88%90%E7%9A%84%E5%91%A2)配置的 `entry` 就是 `webpack-dev-server/client?http://localhost:3001` ，这里的 `?` 后面的参数就是给 `webpack-dev-server/client` 传入得信息，所以在 `client` 中通过 `__resourceQuery` 拿到参数，就可以生成webSocket的连接地址
 
 > node_modules/webpack-dev-server/client/index.js
 
@@ -177,6 +181,8 @@ var socketUrl = createSocketUrl(__resourceQuery);
 // line:176
 socket(socketUrl, onSocketMessage);
 ```
+
+[上一篇][pre]端口错误的就是影响到这里正确生成url了, 至于 `createSocketUrl` 方法也只是校验协议、端口、地址等信息，最后返回一个合法的url。
 
 ### 开始连接webSocket
 
@@ -212,8 +218,9 @@ module.exports = socket;
 
 ## 总结
 
-本文从以下几个方面整理了在连接 `webSocket` 的过程中发生的事情：
-1、创建ws服务端以及和dev服务的关系
-2、socket地址的生成
-3、客户端如何建立连接
-了解了上面的流程后，对于[上一篇][pre]中端口错误的问题也有了更深的认识，以及对客户端和服务端交互比较清晰了，弄明白了这些， `webpack-dev-server` 也就没什么神秘了
+本文从以下几个方面整理了在连接 `webSocket` 的过程中发生的事情： 
+1. 创建ws服务端以及和dev服务的关系
+2. socket地址的生成
+3. 客户端如何建立连接 
+
+了解了上面的流程后，对于[上一篇][pre]中端口错误的问题也有了更深的认识，以及对客户端和服务端交互比较清晰了，弄明白了这些， `webpack-dev-server` 建立 `webSocket` 连接的过程也就没什么神秘了
