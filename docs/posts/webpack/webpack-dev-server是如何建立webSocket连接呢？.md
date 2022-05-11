@@ -3,8 +3,9 @@ sidebar: false
 date: "2022-5-5"
 tag: webpack
 category: 
- - frontEnd  
-title: 和webpack-dev-server建立webSocket连接发生了什么？
+ - frontEnd 
+ - 源码
+title: 源码 | 和webpack-dev-server建立webSocket连接发生了什么？
 ---
 
 [pre]:./%E7%BB%99%E5%85%AC%E5%8F%B8%E9%A1%B9%E7%9B%AE%E5%8A%A0%E4%B8%8A%E7%83%AD%E6%9B%B4%E6%96%B0%E5%8A%9F%E8%83%BD.md
